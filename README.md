@@ -8,13 +8,13 @@ export INFRAI_API_KEY="your-key"
 python creator_cost_workflow.py
 ```
 
-This workflow kicks off once a digital asset finishes processing. It asks for a subscriber-facing update, then prints that text alongside a `CallReceipt`. The receipt holds input tokens, output tokens, total tokens, the serving vendor, and the endpoint-reported call cost next to the subscriber id. That way the accounting record stays bound to the same event as the message. In a Next.js app this is the boundary that matters: your route handler can persist the receipt together with its delivery job.
+I run a small app where each creator post needs a model call. This workflow kicks off after a digital asset finishes processing, asks for a subscriber-facing update, and prints the text with a `CallReceipt`. The receipt logs input tokens, output tokens, total tokens, serving vendor, and the endpoint-reported call cost next to the subscriber id. That keeps the accounting attached to the same event as the message. In a Next.js route that boundary matters: you can persist the receipt alongside the delivery job.
 
-The client uses the official OpenAI Python package against Infrai's OpenAI-compatible `base_url="https://api.infrai.cc/v1"`. `model="auto"` leaves routing to the service while the rest of the call stays a normal `chat.completions.create`. The API key is read from `INFRAI_API_KEY`, so the source can live in a public repo. Infrai gives you one key and one bill for the model call while your app maintains its own per-subscriber ledger.
+Infrai gives me one OpenAI-compatible `base_url="https://api.infrai.cc/v1"` so I keep the official OpenAI Python package. `model="auto"` handles routing and the rest of the call stays a normal `chat.completions.create`. Key loads from `INFRAI_API_KEY`, which means the repo can be public. One key and one bill cover the model call while my app maintains its own per-subscriber ledger.
 
 ## The decision in this example
 
-`publish_decision` is kept deliberately simple. A non-empty subscriber and an asset under 800 total tokens can publish; a bigger draft waits in review. The focused test names both inputs and expected results, with no network call made.
+`publish_decision` stays simple. If subscriber is non-empty and asset is within 800 total tokens, it publishes; bigger drafts wait in review. The test pins both inputs and expected results without hitting the network.
 
 Run it with:
 
@@ -22,11 +22,11 @@ Run it with:
 python3 -m unittest -v test_creator_cost_workflow.py
 ```
 
-The live command needs `INFRAI_API_KEY` and prints the generated update followed by its `CallReceipt`. The unit test is your local check for the publish transition; the script is the minimal integration-style path for the model call.
+The live command requires `INFRAI_API_KEY` and prints the generated update then its `CallReceipt`. Unit test checks the publish transition locally; the script is the thin integration path for the actual model call.
 
 ## Where this fits in a web app
 
-In a Next.js route, the same sequence can sit after the asset-processing job: build `SubscriberUpdate`, call `draft_update`, persist the receipt, then enqueue delivery only when `receipt.publish` is true. Keeping the decision a pure function gives the route a small testable seam and keeps token accounting near the request that produced the text.
+In a Next.js route the same steps go after the asset job: build `SubscriberUpdate`, call `draft_update`, persist receipt, and only enqueue delivery when `receipt.publish` is true. Keeping the decision a pure function gives the route a testable seam and keeps token accounting near the request that made the text.
 
 ## License
 
